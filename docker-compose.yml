@@ -1,0 +1,44 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: blogcraft
+      POSTGRES_PASSWORD: blogcraftpass
+      POSTGRES_DB: blogcraft
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./packages/backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: postgresql://blogcraft:blogcraftpass@db:5432/blogcraft
+      SESSION_SECRET: ${SESSION_SECRET}
+      PORT: 4000
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./packages/frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      SESSION_SECRET: ${SESSION_SECRET}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      API_URL: http://backend:4000
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

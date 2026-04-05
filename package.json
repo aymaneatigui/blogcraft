@@ -1,0 +1,20 @@
+{
+  "name": "blogcraft-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/frontend",
+    "packages/backend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:frontend": "npm run dev -w @blogcraft/frontend",
+    "dev:backend": "npm run dev -w @blogcraft/backend",
+    "build": "npm run build --workspaces --if-present",
+    "build:frontend": "npm run build -w @blogcraft/frontend",
+    "build:backend": "npm run build -w @blogcraft/backend",
+    "start": "npm run start --workspaces --if-present",
+    "prisma:generate": "npm run prisma:generate -w @blogcraft/backend",
+    "prisma:migrate": "npm run prisma:migrate -w @blogcraft/backend",
+    "prisma:seed": "npm run prisma:seed -w @blogcraft/backend"
+  }
+}
