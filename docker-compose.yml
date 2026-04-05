@@ -1,16 +1,4 @@
 services:
-  db:
-    image: postgres:16
-    restart: unless-stopped
-    ports:
-      - "5433:5432"
-    environment:
-      POSTGRES_USER: blogcraft
-      POSTGRES_PASSWORD: blogcraftpass
-      POSTGRES_DB: blogcraft
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
   backend:
     build:
       context: ./packages/backend
@@ -19,11 +7,9 @@ services:
     ports:
       - "4000:4000"
     environment:
-      DATABASE_URL: postgresql://blogcraft:blogcraftpass@db:5432/blogcraft
+      DATABASE_URL: ${DATABASE_URL}
       SESSION_SECRET: ${SESSION_SECRET}
       PORT: 4000
-    depends_on:
-      - db
 
   frontend:
     build:
@@ -39,6 +25,3 @@ services:
       API_URL: http://backend:4000
     depends_on:
       - backend
-
-volumes:
-  pgdata:

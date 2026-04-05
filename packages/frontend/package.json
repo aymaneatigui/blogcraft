@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "dotenv -e ../../.env -- next dev --port 3000",
-    "build": "dotenv -e ../../.env -- next build",
-    "start": "dotenv -e ../../.env -- next start -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
     "lint": "next lint",
     "seed": "echo 'Seeding is done via the backend package'"
   },

@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: blogcraft-backend
+    runtime: docker
+    plan: free
+    rootDir: packages/backend
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: PORT
+        value: 4000
+
+  - type: web
+    name: blogcraft-frontend
+    runtime: docker
+    plan: free
+    rootDir: packages/frontend
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: SESSION_SECRET
+        fromService:
+          name: blogcraft-backend
+          type: web
+          envVarKey: SESSION_SECRET
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: blogcraft-backend
+          type: web
+          property: hostport
+      - key: API_URL
+        fromService:
+          name: blogcraft-backend
+          type: web
+          property: hostport
+      - key: GEMINI_API_KEY
+        sync: false
