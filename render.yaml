@@ -5,6 +5,7 @@ services:
     plan: free
     rootDir: packages/backend
     dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
         sync: false
@@ -29,11 +30,11 @@ services:
         fromService:
           name: blogcraft-backend
           type: web
-          property: hostport
+          property: host
       - key: API_URL
         fromService:
           name: blogcraft-backend
           type: web
-          property: hostport
+          property: host
       - key: GEMINI_API_KEY
         sync: false

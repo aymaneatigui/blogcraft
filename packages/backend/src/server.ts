@@ -1,5 +1,6 @@
 import "dotenv/config";
 import cors from "cors";
+import morgan from "morgan";
 import express, { Request, Response, NextFunction } from "express";
 import { prisma } from "./lib/prisma.js";
 import { hashPassword, verifyPassword, signToken, verifyToken, TokenPayload } from "./lib/auth.js";
@@ -16,6 +17,7 @@ const app = express();
 const port = Number(process.env.PORT || 4000);
 
 app.use(cors({ origin: true, credentials: true }));
+app.use(morgan("dev"));
 app.use(express.json());
 
 // --- Auth middleware ---
