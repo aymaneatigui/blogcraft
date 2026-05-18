@@ -55,6 +55,7 @@ export function BlogEditor({
   const [lastClearedSnapshot, setLastClearedSnapshot] =
     useState<EditorSnapshot | null>(null);
   const [recoverNotice, setRecoverNotice] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const isFullyCleared =
     title.trim() === "" &&
@@ -148,7 +149,9 @@ export function BlogEditor({
         setBody(fullText);
       }
     } catch (err) {
-      console.error("AI error:", err);
+      const msg = err instanceof Error ? err.message : "AI generation failed";
+      setAiError(msg);
+      setTimeout(() => setAiError(null), 5000);
     } finally {
       setIsAiLoading(false);
     }
@@ -245,6 +248,12 @@ export function BlogEditor({
       {recoverNotice && (
         <div className="fixed bottom-5 right-5 z-82 rounded-lg border border-cyan-400/25 bg-cyan-500/10 px-3.5 py-2 text-xs text-cyan-100 shadow-xl">
           {recoverNotice}
+        </div>
+      )}
+
+      {aiError && (
+        <div className="fixed bottom-5 right-5 z-82 rounded-lg border border-red-400/30 bg-red-500/15 px-3.5 py-2 text-xs text-red-200 shadow-xl">
+          AI error: {aiError}
         </div>
       )}
 
