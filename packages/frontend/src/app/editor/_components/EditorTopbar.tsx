@@ -10,6 +10,7 @@ interface EditorTopbarProps {
   tags: string;
   body: string;
   isLoggedIn: boolean;
+  isOwner: boolean;
   isPreview: boolean;
   setIsPreview: (v: boolean) => void;
   isSaving: boolean;
@@ -25,6 +26,7 @@ export function EditorTopbar({
   tags,
   body,
   isLoggedIn,
+  isOwner,
   isPreview,
   setIsPreview,
   isSaving,
@@ -59,36 +61,38 @@ export function EditorTopbar({
       </span>
 
       <div className="ml-auto flex items-center gap-3">
-        {/* AI Write */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setAiMenuOpen(!aiMenuOpen)}
-            disabled={isAiLoading}
-            className="flex cursor-pointer items-center gap-1.5 rounded-full border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-[11px] font-medium text-purple-300 transition-all hover:bg-purple-500/20 disabled:opacity-50"
-          >
-            {isAiLoading ? (
-              <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-              </svg>
-            ) : (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5" />
-                <path d="M2 12l10 5 10-5" />
-              </svg>
+        {/* AI Write — owner only */}
+        {isOwner && (
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setAiMenuOpen(!aiMenuOpen)}
+              disabled={isAiLoading}
+              className="flex cursor-pointer items-center gap-1.5 rounded-full border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-[11px] font-medium text-purple-300 transition-all hover:bg-purple-500/20 disabled:opacity-50"
+            >
+              {isAiLoading ? (
+                <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                  <path d="M2 17l10 5 10-5" />
+                  <path d="M2 12l10 5 10-5" />
+                </svg>
+              )}
+              {isAiLoading ? "Writing..." : "AI Write"}
+            </button>
+            {aiMenuOpen && (
+              <AiDropdown
+                onSelect={(mode) => { setAiMenuOpen(false); onAiAction(mode); }}
+                onClose={() => setAiMenuOpen(false)}
+                hasContent={body.trim().length > 0}
+              />
             )}
-            {isAiLoading ? "Writing..." : "AI Write"}
-          </button>
-          {aiMenuOpen && (
-            <AiDropdown
-              onSelect={(mode) => { setAiMenuOpen(false); onAiAction(mode); }}
-              onClose={() => setAiMenuOpen(false)}
-              hasContent={body.trim().length > 0}
-            />
-          )}
-        </div>
+          </div>
+        )}
 
         <Link
           href="/editor/templates"

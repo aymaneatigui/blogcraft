@@ -9,6 +9,7 @@ import { DEFAULT_TEMPLATES } from "../templates-data";
 
 interface BlogEditorProps {
   isLoggedIn: boolean;
+  isOwner: boolean;
   selectedTemplateId?: string;
   initialData?: {
     id: string;
@@ -28,6 +29,7 @@ type EditorSnapshot = {
 
 export function BlogEditor({
   isLoggedIn,
+  isOwner,
   selectedTemplateId,
   initialData,
 }: BlogEditorProps) {
@@ -122,14 +124,14 @@ export function BlogEditor({
     }
   }
 
-  async function runAi(mode: "generate" | "improve" | "continue", prompt: string) {
+  async function runAi(mode: "generate" | "improve" | "continue", prompt: string, example?: string) {
     setIsAiLoading(true);
     setAiPromptOpen(false);
     try {
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, mode }),
+        body: JSON.stringify({ prompt, mode, example }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => null);
@@ -182,6 +184,7 @@ export function BlogEditor({
         tags={tags.join(", ")}
         body={body}
         isLoggedIn={isLoggedIn}
+        isOwner={isOwner}
         isPreview={isPreview}
         setIsPreview={setIsPreview}
         isSaving={isSaving}
@@ -248,7 +251,7 @@ export function BlogEditor({
       {aiPromptOpen && (
         <AiPromptDialog
           mode={aiMode}
-          onSubmit={(prompt) => runAi(aiMode, prompt)}
+          onSubmit={(prompt, example) => runAi(aiMode, prompt, example)}
           onCancel={() => setAiPromptOpen(false)}
         />
       )}
@@ -256,66 +259,133 @@ export function BlogEditor({
   );
 }
 
+type StyleMode = "none" | "paste" | "template";
+
 function AiPromptDialog({
   mode,
   onSubmit,
   onCancel,
 }: {
   mode: string;
-  onSubmit: (prompt: string) => void;
+  onSubmit: (prompt: string, example?: string) => void;
   onCancel: () => void;
 }) {
-  const [value, setValue] = useState("");
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [topic, setTopic] = useState("");
+  const [styleMode, setStyleMode] = useState<StyleMode>("none");
+  const [customExample, setCustomExample] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const topicRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 50);
+    setTimeout(() => topicRef.current?.focus(), 50);
   }, []);
 
-  function handleSubmit() {
-    if (value.trim()) onSubmit(value.trim());
+  function resolveExample(): string | undefined {
+    if (styleMode === "paste") return customExample.trim() || undefined;
+    if (styleMode === "template") {
+      const tpl = DEFAULT_TEMPLATES.find((t) => t.id === selectedTemplateId);
+      return tpl ? tpl.body : undefined;
+    }
+    return undefined;
   }
+
+  function handleSubmit() {
+    if (!topic.trim()) return;
+    onSubmit(topic.trim(), resolveExample());
+  }
+
+  const canSubmit = topic.trim().length > 0;
 
   return (
     <>
       <div className="fixed inset-0 z-80 bg-black/55 backdrop-blur-sm" onClick={onCancel} />
       <div className="fixed left-1/2 top-1/2 z-81 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-white/10 bg-[#141418] shadow-2xl shadow-black/70">
-        <div className="px-6 pt-6 pb-4">
+
+        {/* Header */}
+        <div className="px-6 pt-5 pb-4">
           <div className="mb-1 flex items-center gap-2">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2" strokeLinecap="round">
               <path d="M12 2L2 7l10 5 10-5-10-5z" />
               <path d="M2 17l10 5 10-5" />
               <path d="M2 12l10 5 10-5" />
             </svg>
-            <p className="text-[14px] font-semibold text-white">
-              {mode === "generate"
-                ? "Generate Article with AI"
-                : mode === "improve"
-                  ? "Improve Content"
-                  : "Continue Writing"}
-            </p>
+            <p className="text-[14px] font-semibold text-white">Generate Article with AI</p>
           </div>
-          <p className="mb-3 text-[12px] text-zinc-500">
-            Describe what you want to write about. Be specific for better results.
-          </p>
+          <p className="text-[12px] text-zinc-500">Describe your topic. Be specific for better results.</p>
+        </div>
+
+        <div className="px-6 pb-4 space-y-4">
+          {/* Topic */}
           <textarea
-            ref={inputRef}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
+            ref={topicRef}
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                handleSubmit();
-              }
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSubmit(); }
               if (e.key === "Escape") onCancel();
             }}
-            rows={4}
-            placeholder="e.g. A beginner's guide to building REST APIs with Node.js and Express, covering routing, middleware, error handling, and deployment..."
+            rows={3}
+            placeholder="e.g. A beginner's guide to REST APIs with Node.js — covering routing, middleware, and deployment..."
             className="w-full resize-none rounded-lg border border-white/10 bg-white/4 px-3.5 py-2.5 text-[13px] text-white/85 outline-none placeholder:text-white/22 focus:border-white/20 focus:bg-white/6 transition-all"
           />
+
+          {/* Style reference section */}
+          <div>
+            <p className="mb-2 text-[11px] font-medium text-zinc-400">Style reference <span className="text-zinc-600">(optional)</span></p>
+            <div className="flex gap-2">
+              {(["none", "paste", "template"] as StyleMode[]).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => { setStyleMode(m); if (m !== "template") setSelectedTemplateId(null); }}
+                  className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-all cursor-pointer ${
+                    styleMode === m
+                      ? "border-purple-500/40 bg-purple-500/15 text-purple-300"
+                      : "border-white/10 bg-white/4 text-zinc-500 hover:text-zinc-300"
+                  }`}
+                >
+                  {m === "none" ? "None" : m === "paste" ? "Paste example" : "Use template"}
+                </button>
+              ))}
+            </div>
+
+            {styleMode === "paste" && (
+              <textarea
+                value={customExample}
+                onChange={(e) => setCustomExample(e.target.value)}
+                rows={4}
+                placeholder="Paste any article or text here — AI will match its structure, tone, and style..."
+                className="mt-2.5 w-full resize-none rounded-lg border border-white/10 bg-white/4 px-3.5 py-2.5 text-[12px] text-white/75 outline-none placeholder:text-white/20 focus:border-white/20 transition-all"
+              />
+            )}
+
+            {styleMode === "template" && (
+              <div className="mt-2.5 space-y-1.5">
+                {DEFAULT_TEMPLATES.map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    onClick={() => setSelectedTemplateId(tpl.id)}
+                    className={`w-full rounded-lg border px-3.5 py-2.5 text-left transition-all cursor-pointer ${
+                      selectedTemplateId === tpl.id
+                        ? "border-purple-500/40 bg-purple-500/10"
+                        : "border-white/8 bg-white/3 hover:border-white/15 hover:bg-white/5"
+                    }`}
+                  >
+                    <p className={`text-[12px] font-medium ${selectedTemplateId === tpl.id ? "text-purple-200" : "text-zinc-300"}`}>
+                      {tpl.label}
+                    </p>
+                    <p className="text-[11px] text-zinc-500 mt-0.5">{tpl.description}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Footer */}
         <div className="flex items-center justify-between border-t border-white/6 px-6 py-4">
-          <span className="text-[10px] text-zinc-600">Cmd/Ctrl+Enter to submit</span>
+          <span className="text-[10px] text-zinc-600">Cmd/Ctrl+Enter to generate</span>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -327,7 +397,7 @@ function AiPromptDialog({
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!value.trim()}
+              disabled={!canSubmit}
               className="cursor-pointer rounded-full border border-purple-500/25 bg-purple-500/15 px-4 py-2 text-[12px] font-medium text-purple-300 transition-all hover:bg-purple-500/25 disabled:opacity-40"
             >
               Generate

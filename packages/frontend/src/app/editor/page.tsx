@@ -9,5 +9,8 @@ export default async function EditorPage({
   const session = await getSession();
   const { template } = await searchParams;
 
-  return <BlogEditor isLoggedIn={!!session} selectedTemplateId={template} />;
+  const ownerEmail = (process.env.OWNER_EMAIL ?? "").trim().toLowerCase();
+  const isOwner = !!session && session.email.trim().toLowerCase() === ownerEmail;
+
+  return <BlogEditor isLoggedIn={!!session} isOwner={isOwner} selectedTemplateId={template} />;
 }
