@@ -7,3 +7,4 @@ packages/*/.next/
 packages/*/dist/
 tsconfig.tsbuildinfo
 packages/*/tsconfig.tsbuildinfo
+environments/
